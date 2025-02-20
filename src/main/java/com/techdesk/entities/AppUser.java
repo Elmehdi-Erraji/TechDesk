@@ -7,7 +7,9 @@ import jakarta.validation.constraints.Size;
 import lombok.*;
 import org.hibernate.annotations.GenericGenerator;
 
+import java.util.Set;
 import java.util.UUID;
+
 @Entity
 @Table(name = "app_users")
 @Data
@@ -38,4 +40,14 @@ public class AppUser {
     @Enumerated(EnumType.STRING)
     @Column(name = "role", nullable = false)
     private Role role;
+
+    @OneToMany(mappedBy = "createdBy", fetch = FetchType.LAZY)
+    @ToString.Exclude
+    @EqualsAndHashCode.Exclude
+    private Set<Ticket> createdTickets;
+
+    @OneToMany(mappedBy = "assignedTo", fetch = FetchType.LAZY)
+    @ToString.Exclude
+    @EqualsAndHashCode.Exclude
+    private Set<Ticket> assignedTickets;
 }
