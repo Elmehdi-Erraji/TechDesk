@@ -1,8 +1,8 @@
 spring:
   datasource:
     url: jdbc:oracle:thin:@localhost:1521/XEPDB1
-    username: system
-    password: oracle
+    username: techdesk
+    password: techdesk_password
     driver-class-name: oracle.jdbc.OracleDriver
   jpa:
     hibernate:
