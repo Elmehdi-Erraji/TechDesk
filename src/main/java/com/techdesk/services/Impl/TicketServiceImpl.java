@@ -12,12 +12,15 @@ import com.techdesk.repositories.TicketRepository;
 import com.techdesk.services.AuditLogService;
 import com.techdesk.services.TicketAssignmentService;
 import com.techdesk.services.TicketService;
+import com.techdesk.utils.TicketSearchUtil;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
@@ -100,6 +103,30 @@ public class TicketServiceImpl implements TicketService {
         auditLogService.logStatusChange(ticket, supportUser, oldStatus, updateDTO.getStatus().name());
 
         return ticketMapper.ticketToTicketResponseDTO(updatedTicket);
+    }
+
+
+    @Override
+    public Page<TicketResponseDTO> searchTickets(String ticketId, String status, Pageable pageable) {
+        Optional<UUID> ticketUuidOpt = TicketSearchUtil.parseUuid(ticketId);
+        Optional<TicketStatus> statusOpt = TicketSearchUtil.parseTicketStatus(status);
+
+        if (ticketUuidOpt.isPresent()) {
+            Ticket ticket = ticketRepository.findById(ticketUuidOpt.get())
+                    .orElseThrow(() -> new IllegalArgumentException("Ticket not found"));
+            if (statusOpt.isPresent() && !ticket.getStatus().equals(statusOpt.get())) {
+                return Page.empty(pageable);
+            }
+            return new PageImpl<>(List.of(ticketMapper.ticketToTicketResponseDTO(ticket)), pageable, 1);
+        } else {
+            if (statusOpt.isPresent()) {
+                Page<Ticket> tickets = ticketRepository.findByStatus(statusOpt.get(), pageable);
+                return tickets.map(ticketMapper::ticketToTicketResponseDTO);
+            } else {
+                Page<Ticket> tickets = ticketRepository.findAll(pageable);
+                return tickets.map(ticketMapper::ticketToTicketResponseDTO);
+            }
+        }
     }
 
 

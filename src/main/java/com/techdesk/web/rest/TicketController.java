@@ -7,6 +7,7 @@ import com.techdesk.services.TicketService;
 import jakarta.validation.Valid;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -69,5 +70,12 @@ public class TicketController {
         return ResponseEntity.ok(response);
     }
 
-
+    @GetMapping("/search")
+    public ResponseEntity<Page<TicketResponseDTO>> searchTickets(
+            @RequestParam(required = false) String ticketId,
+            @RequestParam(required = false) String status,
+            @PageableDefault(page = 0, size = 10) Pageable pageable) {
+        Page<TicketResponseDTO> result = ticketService.searchTickets(ticketId, status, pageable);
+        return ResponseEntity.ok(result);
+    }
 }

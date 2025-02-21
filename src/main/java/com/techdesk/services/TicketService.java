@@ -18,4 +18,7 @@ public interface TicketService {
     // IT Support
     List<TicketResponseDTO> getAllTickets();
     TicketResponseDTO updateTicketStatus(UUID ticketId, UpdateTicketStatusDTO updateDTO, UUID supportUserId);
+
+    Page<TicketResponseDTO> searchTickets(String ticketId, String status, Pageable pageable);
+
 }
