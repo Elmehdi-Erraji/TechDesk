@@ -13,6 +13,7 @@ import com.techdesk.services.AuditLogService;
 import com.techdesk.services.TicketAssignmentService;
 import com.techdesk.services.TicketService;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
@@ -103,5 +104,52 @@ public class TicketServiceImpl implements TicketService {
     }
 
 
+    @Override
+    public Page<TicketResponseDTO> searchTickets(String ticketId, String status, Pageable pageable) {
+        // If ticketId is provided, attempt to convert to UUID and search by it.
+        if (ticketId != null && !ticketId.trim().isEmpty()) {
+            UUID uuid;
+            try {
+                uuid = UUID.fromString(ticketId);
+            } catch (IllegalArgumentException e) {
+                throw new IllegalArgumentException("Invalid ticketId format");
+            }
+            // If status is also provided, check if the ticket has that status.
+            if (status != null && !status.trim().isEmpty()) {
+                TicketStatus ts;
+                try {
+                    ts = TicketStatus.valueOf(status.toUpperCase());
+                } catch (IllegalArgumentException e) {
+                    throw new IllegalArgumentException("Invalid status value");
+                }
+                Ticket ticket = ticketRepository.findById(uuid)
+                        .orElseThrow(() -> new IllegalArgumentException("Ticket not found"));
+                if (!ticket.getStatus().equals(ts)) {
+                    return Page.empty(pageable);
+                }
+                return new PageImpl<>(List.of(ticketMapper.ticketToTicketResponseDTO(ticket)), pageable, 1);
+            } else {
+                Ticket ticket = ticketRepository.findById(uuid)
+                        .orElseThrow(() -> new IllegalArgumentException("Ticket not found"));
+                return new PageImpl<>(List.of(ticketMapper.ticketToTicketResponseDTO(ticket)), pageable, 1);
+            }
+        } else {
+            // No ticketId provided; filter by status if provided
+            if (status != null && !status.trim().isEmpty()) {
+                TicketStatus ts;
+                try {
+                    ts = TicketStatus.valueOf(status.toUpperCase());
+                } catch (IllegalArgumentException e) {
+                    throw new IllegalArgumentException("Invalid status value");
+                }
+                Page<Ticket> tickets = ticketRepository.findByStatus(ts, pageable);
+                return tickets.map(ticketMapper::ticketToTicketResponseDTO);
+            } else {
+                // No filters provided; return all tickets
+                Page<Ticket> tickets = ticketRepository.findAll(pageable);
+                return tickets.map(ticketMapper::ticketToTicketResponseDTO);
+            }
+        }
+    }
 
 }

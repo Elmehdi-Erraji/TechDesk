@@ -15,4 +15,6 @@ public interface TicketRepository extends JpaRepository<Ticket, UUID> {
 
     int countByAssignedToAndStatusNotIn(AppUser assignedTo, List<TicketStatus> statuses);
 
+    Page<Ticket> findByStatus(TicketStatus status, Pageable pageable);
+
 }
