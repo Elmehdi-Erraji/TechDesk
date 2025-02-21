@@ -9,6 +9,7 @@ import com.techdesk.entities.Ticket;
 import com.techdesk.repositories.AppUserRepository;
 import com.techdesk.repositories.CommentRepository;
 import com.techdesk.repositories.TicketRepository;
+import com.techdesk.services.AuditLogService;
 import com.techdesk.services.CommentService;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -24,20 +25,21 @@ public class CommentServiceImpl implements CommentService {
     private final AppUserRepository appUserRepository;
     private final CommentRepository commentRepository;
     private final CommentMapper commentMapper;
+    private final AuditLogService auditLogService;
 
     public CommentServiceImpl(TicketRepository ticketRepository,
                               AppUserRepository appUserRepository,
                               CommentRepository commentRepository,
-                              CommentMapper commentMapper) {
+                              CommentMapper commentMapper, AuditLogService auditLogService) {
         this.ticketRepository = ticketRepository;
         this.appUserRepository = appUserRepository;
         this.commentRepository = commentRepository;
         this.commentMapper = commentMapper;
+        this.auditLogService = auditLogService;
     }
 
     @Override
     public CommentResponseDTO addCommentToTicket(UUID ticketId, CommentRequestDTO commentRequestDTO, UUID supportUserId) {
-        // Verify support agent exists and has the IT_SUPPORT role.
         AppUser supportUser = appUserRepository.findById(supportUserId)
                 .orElseThrow(() -> new IllegalArgumentException("Support user not found"));
         if (!"IT_SUPPORT".equals(supportUser.getRole().name())) {
@@ -50,8 +52,12 @@ public class CommentServiceImpl implements CommentService {
         comment.setUser(supportUser);
         comment.setCreatedAt(LocalDateTime.now());
         Comment savedComment = commentRepository.save(comment);
+
+        auditLogService.logCommentAdded(ticket, supportUser, comment.getText());
+
         return commentMapper.commentToCommentResponseDTO(savedComment);
     }
+
 
     @Override
     public Page<CommentResponseDTO> getCommentsForTicket(UUID ticketId, Pageable pageable) {

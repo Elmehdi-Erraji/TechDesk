@@ -9,6 +9,7 @@ import com.techdesk.entities.Ticket;
 import com.techdesk.entities.enums.TicketStatus;
 import com.techdesk.repositories.AppUserRepository;
 import com.techdesk.repositories.TicketRepository;
+import com.techdesk.services.AuditLogService;
 import com.techdesk.services.TicketAssignmentService;
 import com.techdesk.services.TicketService;
 import org.springframework.data.domain.Page;
@@ -28,13 +29,14 @@ public class TicketServiceImpl implements TicketService {
     private final AppUserRepository appUserRepository;
     private final TicketMapper ticketMapper;
     private final TicketAssignmentService ticketAssignmentService;
+    private final AuditLogService auditLogService;
 
-
-    public TicketServiceImpl(TicketRepository ticketRepository, AppUserRepository appUserRepository, TicketMapper ticketMapper, TicketAssignmentService ticketAssignmentService) {
+    public TicketServiceImpl(TicketRepository ticketRepository, AppUserRepository appUserRepository, TicketMapper ticketMapper, TicketAssignmentService ticketAssignmentService, AuditLogService auditLogService) {
         this.ticketRepository = ticketRepository;
         this.appUserRepository = appUserRepository;
         this.ticketMapper = ticketMapper;
         this.ticketAssignmentService = ticketAssignmentService;
+        this.auditLogService = auditLogService;
     }
 
 
@@ -90,10 +92,13 @@ public class TicketServiceImpl implements TicketService {
         }
         Ticket ticket = ticketRepository.findById(ticketId)
                 .orElseThrow(() -> new IllegalArgumentException("Ticket not found"));
+        String oldStatus = ticket.getStatus().name();
         ticket.setStatus(updateDTO.getStatus());
         ticket.setUpdatedAt(LocalDateTime.now());
         Ticket updatedTicket = ticketRepository.save(ticket);
-        // Optionally, add audit logging here.
+
+        auditLogService.logStatusChange(ticket, supportUser, oldStatus, updateDTO.getStatus().name());
+
         return ticketMapper.ticketToTicketResponseDTO(updatedTicket);
     }
 
