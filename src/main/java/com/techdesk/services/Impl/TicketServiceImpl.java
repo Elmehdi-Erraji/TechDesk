@@ -13,10 +13,16 @@ import com.techdesk.services.AuditLogService;
 import com.techdesk.services.TicketAssignmentService;
 import com.techdesk.services.TicketService;
 import com.techdesk.utils.TicketSearchUtil;
+import com.techdesk.web.errors.SupportUserNotFoundException;
+import com.techdesk.web.errors.TicketNotFoundException;
+import com.techdesk.web.errors.UnauthorizedAccessException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -33,6 +39,7 @@ public class TicketServiceImpl implements TicketService {
     private final TicketMapper ticketMapper;
     private final TicketAssignmentService ticketAssignmentService;
     private final AuditLogService auditLogService;
+    private static final Logger logger = LoggerFactory.getLogger(TicketServiceImpl.class);
 
     public TicketServiceImpl(TicketRepository ticketRepository, AppUserRepository appUserRepository, TicketMapper ticketMapper, TicketAssignmentService ticketAssignmentService, AuditLogService auditLogService) {
         this.ticketRepository = ticketRepository;
@@ -44,6 +51,7 @@ public class TicketServiceImpl implements TicketService {
 
 
     @Override
+    @Transactional
     public TicketResponseDTO createTicket(CreateTicketDTO createTicketDTO, UUID employeeId) {
         AppUser employee = appUserRepository.findById(employeeId)
                 .orElseThrow(() -> new IllegalArgumentException("Employee not found"));
@@ -51,12 +59,14 @@ public class TicketServiceImpl implements TicketService {
         ticket.setCreatedBy(employee);
         ticket.setStatus(TicketStatus.NEW);
         ticket.setCreatedAt(LocalDateTime.now());
-        // Assign the ticket using the TicketAssignmentService
         AppUser assignedAgent = ticketAssignmentService.assignTicket(ticket);
         ticket.setAssignedTo(assignedAgent);
         Ticket savedTicket = ticketRepository.save(ticket);
+        logger.info("Ticket {} created by employee {} and assigned to support agent {}",
+                savedTicket.getId(), employee.getUsername(), assignedAgent.getUsername());
         return ticketMapper.ticketToTicketResponseDTO(savedTicket);
     }
+
 
 
     @Override
@@ -87,20 +97,23 @@ public class TicketServiceImpl implements TicketService {
     }
 
     @Override
+    @Transactional
     public TicketResponseDTO updateTicketStatus(UUID ticketId, UpdateTicketStatusDTO updateDTO, UUID supportUserId) {
         AppUser supportUser = appUserRepository.findById(supportUserId)
-                .orElseThrow(() -> new IllegalArgumentException("Support user not found"));
+                .orElseThrow(() -> new SupportUserNotFoundException("Support user not found"));
         if (!"IT_SUPPORT".equals(supportUser.getRole().name())) {
-            throw new IllegalArgumentException("Only IT support can update ticket status");
+            throw new UnauthorizedAccessException("Only IT support can update ticket status");
         }
         Ticket ticket = ticketRepository.findById(ticketId)
-                .orElseThrow(() -> new IllegalArgumentException("Ticket not found"));
+                .orElseThrow(() -> new TicketNotFoundException("Ticket not found"));
         String oldStatus = ticket.getStatus().name();
         ticket.setStatus(updateDTO.getStatus());
         ticket.setUpdatedAt(LocalDateTime.now());
         Ticket updatedTicket = ticketRepository.save(ticket);
 
         auditLogService.logStatusChange(ticket, supportUser, oldStatus, updateDTO.getStatus().name());
+        logger.info("Ticket {} status updated from {} to {} by support user {}",
+                ticket.getId(), oldStatus, updateDTO.getStatus().name(), supportUser.getUsername());
 
         return ticketMapper.ticketToTicketResponseDTO(updatedTicket);
     }

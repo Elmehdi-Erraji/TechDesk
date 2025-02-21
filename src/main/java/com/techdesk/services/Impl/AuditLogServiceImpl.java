@@ -6,6 +6,8 @@ import com.techdesk.entities.AppUser;
 import com.techdesk.entities.enums.AuditLogType;
 import com.techdesk.repositories.AuditLogRepository;
 import com.techdesk.services.AuditLogService;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -14,6 +16,8 @@ import java.time.LocalDateTime;
 
 @Service
 public class AuditLogServiceImpl implements AuditLogService {
+
+    private static final Logger logger = LoggerFactory.getLogger(AuditLogServiceImpl.class);
 
     private final AuditLogRepository auditLogRepository;
 
@@ -31,6 +35,8 @@ public class AuditLogServiceImpl implements AuditLogService {
                 .timestamp(LocalDateTime.now())
                 .build();
         auditLogRepository.save(log);
+        logger.info("Audit log created: Ticket {} status changed from {} to {} by user {}",
+                ticket.getId(), oldStatus, newStatus, changedBy.getUsername());
     }
 
     @Override
@@ -43,6 +49,8 @@ public class AuditLogServiceImpl implements AuditLogService {
                 .timestamp(LocalDateTime.now())
                 .build();
         auditLogRepository.save(log);
+        logger.info("Audit log created: Comment added to Ticket {} by user {}",
+                ticket.getId(), changedBy.getUsername());
     }
 
     @Override
@@ -54,5 +62,4 @@ public class AuditLogServiceImpl implements AuditLogService {
     public Page<TicketAuditLog> getAllLogs(Pageable pageable) {
         return auditLogRepository.findAll(pageable);
     }
-
 }
