@@ -7,11 +7,11 @@ import com.techdesk.dto.mappers.TicketMapper;
 import com.techdesk.entities.AppUser;
 import com.techdesk.entities.Ticket;
 import com.techdesk.entities.enums.TicketStatus;
-import com.techdesk.repositories.AppUserRepository;
 import com.techdesk.repositories.TicketRepository;
 import com.techdesk.services.AuditLogService;
 import com.techdesk.services.TicketAssignmentService;
 import com.techdesk.services.TicketService;
+import com.techdesk.services.UserService;
 import com.techdesk.utils.TicketSearchUtil;
 import com.techdesk.web.errors.SupportUserNotFoundException;
 import com.techdesk.web.errors.TicketNotFoundException;
@@ -21,6 +21,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -35,25 +36,26 @@ import java.util.stream.Collectors;
 public class TicketServiceImpl implements TicketService {
 
     private final TicketRepository ticketRepository;
-    private final AppUserRepository appUserRepository;
     private final TicketMapper ticketMapper;
     private final TicketAssignmentService ticketAssignmentService;
     private final AuditLogService auditLogService;
+    private final UserService userService;
     private static final Logger logger = LoggerFactory.getLogger(TicketServiceImpl.class);
 
-    public TicketServiceImpl(TicketRepository ticketRepository, AppUserRepository appUserRepository, TicketMapper ticketMapper, TicketAssignmentService ticketAssignmentService, AuditLogService auditLogService) {
+    public TicketServiceImpl(TicketRepository ticketRepository, TicketMapper ticketMapper,
+                             TicketAssignmentService ticketAssignmentService, AuditLogService auditLogService,
+                             UserService userService) {
         this.ticketRepository = ticketRepository;
-        this.appUserRepository = appUserRepository;
         this.ticketMapper = ticketMapper;
         this.ticketAssignmentService = ticketAssignmentService;
         this.auditLogService = auditLogService;
+        this.userService = userService;
     }
-
 
     @Override
     @Transactional
     public TicketResponseDTO createTicket(CreateTicketDTO createTicketDTO, UUID employeeId) {
-        AppUser employee = appUserRepository.findById(employeeId)
+        AppUser employee = userService.findById(employeeId)
                 .orElseThrow(() -> new IllegalArgumentException("Employee not found"));
         Ticket ticket = ticketMapper.createTicketDTOToTicket(createTicketDTO);
         ticket.setCreatedBy(employee);
@@ -67,7 +69,15 @@ public class TicketServiceImpl implements TicketService {
         return ticketMapper.ticketToTicketResponseDTO(savedTicket);
     }
 
+    @Override
+    public Optional<Ticket> findById(UUID ticketId) {
+        return Optional.of(getTicketEntityById(ticketId));
+    }
 
+    private Ticket getTicketEntityById(UUID ticketId) {
+        return ticketRepository.findById(ticketId)
+                .orElseThrow(() -> new TicketNotFoundException("Ticket not found with id " + ticketId));
+    }
 
     @Override
     public Page<TicketResponseDTO> getTicketsForEmployee(UUID employeeId, Pageable pageable) {
@@ -77,14 +87,12 @@ public class TicketServiceImpl implements TicketService {
 
     @Override
     public TicketResponseDTO getTicketByIdForEmployee(UUID ticketId, UUID employeeId) {
-        Ticket ticket = ticketRepository.findById(ticketId)
-                .orElseThrow(() -> new IllegalArgumentException("Ticket not found"));
+        Ticket ticket = getTicketEntityById(ticketId);
         if (!ticket.getCreatedBy().getId().equals(employeeId)) {
             throw new IllegalArgumentException("Access denied");
         }
         return ticketMapper.ticketToTicketResponseDTO(ticket);
     }
-
 
     // IT Support
 
@@ -98,14 +106,13 @@ public class TicketServiceImpl implements TicketService {
 
     @Override
     @Transactional
-    public TicketResponseDTO updateTicketStatus(UUID ticketId, UpdateTicketStatusDTO updateDTO, UUID supportUserId) {
-        AppUser supportUser = appUserRepository.findById(supportUserId)
+    public TicketResponseDTO updateTicketStatus(UUID ticketId, UUID supportUserId, UpdateTicketStatusDTO updateDTO) {
+        AppUser supportUser = userService.findById(supportUserId)
                 .orElseThrow(() -> new SupportUserNotFoundException("Support user not found"));
-        if (!"IT_SUPPORT".equals(supportUser.getRole().name())) {
+        if (!supportUser.getRole().name().equals("IT_SUPPORT")) {
             throw new UnauthorizedAccessException("Only IT support can update ticket status");
         }
-        Ticket ticket = ticketRepository.findById(ticketId)
-                .orElseThrow(() -> new TicketNotFoundException("Ticket not found"));
+        Ticket ticket = getTicketEntityById(ticketId);
         String oldStatus = ticket.getStatus().name();
         ticket.setStatus(updateDTO.getStatus());
         ticket.setUpdatedAt(LocalDateTime.now());
@@ -118,30 +125,29 @@ public class TicketServiceImpl implements TicketService {
         return ticketMapper.ticketToTicketResponseDTO(updatedTicket);
     }
 
-
     @Override
     public Page<TicketResponseDTO> searchTickets(String ticketId, String status, Pageable pageable) {
         Optional<UUID> ticketUuidOpt = TicketSearchUtil.parseUuid(ticketId);
         Optional<TicketStatus> statusOpt = TicketSearchUtil.parseTicketStatus(status);
 
+        Specification<Ticket> spec = Specification.where(null);
+
         if (ticketUuidOpt.isPresent()) {
-            Ticket ticket = ticketRepository.findById(ticketUuidOpt.get())
-                    .orElseThrow(() -> new IllegalArgumentException("Ticket not found"));
-            if (statusOpt.isPresent() && !ticket.getStatus().equals(statusOpt.get())) {
-                return Page.empty(pageable);
-            }
-            return new PageImpl<>(List.of(ticketMapper.ticketToTicketResponseDTO(ticket)), pageable, 1);
-        } else {
-            if (statusOpt.isPresent()) {
-                Page<Ticket> tickets = ticketRepository.findByStatus(statusOpt.get(), pageable);
-                return tickets.map(ticketMapper::ticketToTicketResponseDTO);
-            } else {
-                Page<Ticket> tickets = ticketRepository.findAll(pageable);
-                return tickets.map(ticketMapper::ticketToTicketResponseDTO);
-            }
+            spec = spec.and((root, query, criteriaBuilder) ->
+                    criteriaBuilder.equal(root.get("id"), ticketUuidOpt.get()));
         }
+
+        if (statusOpt.isPresent()) {
+            spec = spec.and((root, query, criteriaBuilder) ->
+                    criteriaBuilder.equal(root.get("status"), statusOpt.get()));
+        }
+
+        Page<Ticket> tickets = ticketRepository.findAll(spec, pageable);
+
+        if (tickets.isEmpty()) {
+            throw new TicketNotFoundException("No tickets found with the provided criteria");
+        }
+
+        return tickets.map(ticketMapper::ticketToTicketResponseDTO);
     }
-
-
-
 }

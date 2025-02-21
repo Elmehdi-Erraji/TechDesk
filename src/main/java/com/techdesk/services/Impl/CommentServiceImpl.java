@@ -11,6 +11,8 @@ import com.techdesk.repositories.CommentRepository;
 import com.techdesk.repositories.TicketRepository;
 import com.techdesk.services.AuditLogService;
 import com.techdesk.services.CommentService;
+import com.techdesk.services.TicketService;
+import com.techdesk.services.UserService;
 import com.techdesk.web.errors.SupportUserNotFoundException;
 import com.techdesk.web.errors.TicketNotFoundException;
 import com.techdesk.web.errors.UnauthorizedAccessException;
@@ -29,19 +31,20 @@ public class CommentServiceImpl implements CommentService {
 
     private static final Logger logger = LoggerFactory.getLogger(CommentServiceImpl.class);
 
-    private final TicketRepository ticketRepository;
-    private final AppUserRepository appUserRepository;
+    private final TicketService ticketService;
+    private final UserService userService;
+
     private final CommentRepository commentRepository;
     private final CommentMapper commentMapper;
     private final AuditLogService auditLogService;
 
     public CommentServiceImpl(TicketRepository ticketRepository,
-                              AppUserRepository appUserRepository,
+                              AppUserRepository appUserRepository, TicketService ticketService, UserService userService,
                               CommentRepository commentRepository,
                               CommentMapper commentMapper,
                               AuditLogService auditLogService) {
-        this.ticketRepository = ticketRepository;
-        this.appUserRepository = appUserRepository;
+        this.ticketService = ticketService;
+        this.userService = userService;
         this.commentRepository = commentRepository;
         this.commentMapper = commentMapper;
         this.auditLogService = auditLogService;
@@ -50,12 +53,12 @@ public class CommentServiceImpl implements CommentService {
     @Override
     @Transactional
     public CommentResponseDTO addCommentToTicket(UUID ticketId, CommentRequestDTO commentRequestDTO, UUID supportUserId) {
-        AppUser supportUser = appUserRepository.findById(supportUserId)
+        AppUser supportUser = userService.findById(supportUserId)
                 .orElseThrow(() -> new SupportUserNotFoundException("Support user not found"));
         if (!"IT_SUPPORT".equals(supportUser.getRole().name())) {
             throw new UnauthorizedAccessException("Only IT support agents can add comments");
         }
-        Ticket ticket = ticketRepository.findById(ticketId)
+        Ticket ticket = ticketService.findById(ticketId)
                 .orElseThrow(() -> new TicketNotFoundException("Ticket not found"));
         Comment comment = commentMapper.commentRequestDTOToComment(commentRequestDTO);
         comment.setTicket(ticket);
@@ -71,7 +74,7 @@ public class CommentServiceImpl implements CommentService {
 
     @Override
     public Page<CommentResponseDTO> getCommentsForTicket(UUID ticketId, Pageable pageable) {
-        Ticket ticket = ticketRepository.findById(ticketId)
+        Ticket ticket = ticketService.findById(ticketId)
                 .orElseThrow(() -> new TicketNotFoundException("Ticket not found"));
         return commentRepository.findByTicket(ticket, pageable)
                 .map(commentMapper::commentToCommentResponseDTO);

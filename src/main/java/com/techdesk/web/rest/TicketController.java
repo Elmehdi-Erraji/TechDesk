@@ -66,7 +66,7 @@ public class TicketController {
     public ResponseEntity<TicketResponseDTO> updateTicketStatus(@PathVariable UUID ticketId,
                                                                 @Valid @RequestBody UpdateTicketStatusDTO updateDTO,
                                                                 @RequestParam UUID supportUserId) {
-        TicketResponseDTO response = ticketService.updateTicketStatus(ticketId, updateDTO, supportUserId);
+        TicketResponseDTO response = ticketService.updateTicketStatus(ticketId, supportUserId, updateDTO);
         return ResponseEntity.ok(response);
     }
 
