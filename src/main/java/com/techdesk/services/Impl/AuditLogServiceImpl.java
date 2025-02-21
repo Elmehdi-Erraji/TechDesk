@@ -6,6 +6,8 @@ import com.techdesk.entities.AppUser;
 import com.techdesk.entities.enums.AuditLogType;
 import com.techdesk.repositories.AuditLogRepository;
 import com.techdesk.services.AuditLogService;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
@@ -42,4 +44,15 @@ public class AuditLogServiceImpl implements AuditLogService {
                 .build();
         auditLogRepository.save(log);
     }
+
+    @Override
+    public Page<TicketAuditLog> getLogsForTicket(Ticket ticket, Pageable pageable) {
+        return auditLogRepository.findByTicket(ticket, pageable);
+    }
+
+    @Override
+    public Page<TicketAuditLog> getAllLogs(Pageable pageable) {
+        return auditLogRepository.findAll(pageable);
+    }
+
 }
