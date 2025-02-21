@@ -17,6 +17,12 @@ import org.springframework.transaction.annotation.Transactional;
 
 
 
+/**
+ * Implementation of the {@link AuthService} interface.
+ * <p>
+ * This class provides the logic for user login and registration, including password hashing and validation.
+ * </p>
+ */
 @Service
 public class AuthServiceImpl implements AuthService {
 
@@ -25,11 +31,20 @@ public class AuthServiceImpl implements AuthService {
     private final AppUserRepository appUserRepository;
     private final AppUserMapper appUserMapper;
 
+    /**
+     * Constructs an {@code AuthServiceImpl} with the required dependencies.
+     *
+     * @param appUserRepository the repository for managing AppUser entities
+     * @param appUserMapper     the mapper for converting between AppUser entities and DTOs
+     */
     public AuthServiceImpl(AppUserRepository appUserRepository, AppUserMapper appUserMapper) {
         this.appUserRepository = appUserRepository;
         this.appUserMapper = appUserMapper;
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public AuthResponseDTO login(LoginRequestDTO loginRequest) {
         AppUser user = appUserRepository.findByUsername(loginRequest.getUsername())
@@ -45,6 +60,9 @@ public class AuthServiceImpl implements AuthService {
         return appUserMapper.toResponseDto(user);
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     @Transactional
     public AuthResponseDTO register(RegisterRequestDTO registerRequest) {

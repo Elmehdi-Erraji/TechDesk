@@ -31,7 +31,14 @@ import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
-
+/**
+ * Implementation of the {@link TicketService} interface.
+ * <p>
+ * This class handles ticket creation, retrieval, status updates, and searches.
+ * It enforces business rules such as ensuring that only the creator can view their tickets and only IT support users
+ * can update ticket statuses.
+ * </p>
+ */
 @Service
 public class TicketServiceImpl implements TicketService {
 
@@ -42,6 +49,15 @@ public class TicketServiceImpl implements TicketService {
     private final UserService userService;
     private static final Logger logger = LoggerFactory.getLogger(TicketServiceImpl.class);
 
+    /**
+     * Constructs a {@code TicketServiceImpl} with the required dependencies.
+     *
+     * @param ticketRepository       the repository for managing Ticket entities
+     * @param ticketMapper           the mapper for converting between Ticket entities and DTOs
+     * @param ticketAssignmentService the service for assigning tickets to support agents
+     * @param auditLogService        the service for logging audit events related to tickets
+     * @param userService            the service for managing user operations
+     */
     public TicketServiceImpl(TicketRepository ticketRepository, TicketMapper ticketMapper,
                              TicketAssignmentService ticketAssignmentService, AuditLogService auditLogService,
                              UserService userService) {
@@ -52,6 +68,9 @@ public class TicketServiceImpl implements TicketService {
         this.userService = userService;
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     @Transactional
     public TicketResponseDTO createTicket(CreateTicketDTO createTicketDTO, UUID employeeId) {
@@ -69,22 +88,38 @@ public class TicketServiceImpl implements TicketService {
         return ticketMapper.ticketToTicketResponseDTO(savedTicket);
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public Optional<Ticket> findById(UUID ticketId) {
         return Optional.of(getTicketEntityById(ticketId));
     }
 
+    /**
+     * Helper method to retrieve a Ticket entity by its unique identifier.
+     *
+     * @param ticketId the unique identifier of the ticket
+     * @return the {@link Ticket} entity if found
+     * @throws TicketNotFoundException if the ticket is not found
+     */
     private Ticket getTicketEntityById(UUID ticketId) {
         return ticketRepository.findById(ticketId)
                 .orElseThrow(() -> new TicketNotFoundException("Ticket not found with id " + ticketId));
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public Page<TicketResponseDTO> getTicketsForEmployee(UUID employeeId, Pageable pageable) {
         Page<Ticket> tickets = ticketRepository.findByCreatedById(employeeId, pageable);
         return tickets.map(ticketMapper::ticketToTicketResponseDTO);
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public TicketResponseDTO getTicketByIdForEmployee(UUID ticketId, UUID employeeId) {
         Ticket ticket = getTicketEntityById(ticketId);
@@ -94,8 +129,11 @@ public class TicketServiceImpl implements TicketService {
         return ticketMapper.ticketToTicketResponseDTO(ticket);
     }
 
-    // IT Support
+    // IT Support operations
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public List<TicketResponseDTO> getAllTickets() {
         List<Ticket> tickets = ticketRepository.findAll();
@@ -104,6 +142,9 @@ public class TicketServiceImpl implements TicketService {
                 .collect(Collectors.toList());
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     @Transactional
     public TicketResponseDTO updateTicketStatus(UUID ticketId, UUID supportUserId, UpdateTicketStatusDTO updateDTO) {
@@ -125,6 +166,9 @@ public class TicketServiceImpl implements TicketService {
         return ticketMapper.ticketToTicketResponseDTO(updatedTicket);
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public Page<TicketResponseDTO> searchTickets(String ticketId, String status, Pageable pageable) {
         Optional<UUID> ticketUuidOpt = TicketSearchUtil.parseUuid(ticketId);

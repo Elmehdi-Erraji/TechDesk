@@ -15,6 +15,13 @@ import org.springframework.stereotype.Service;
 import java.util.Arrays;
 import java.util.List;
 
+/**
+ * Implementation of the {@link TicketAssignmentService} interface.
+ * <p>
+ * This class assigns tickets to support agents by finding the agent with the fewest open tickets.
+ * If no support agent is available, a {@link com.techdesk.web.errors.NoSupportAgentAvailableException} is thrown.
+ * </p>
+ */
 @Service
 public class TicketAssignmentServiceImpl implements TicketAssignmentService {
 
@@ -23,11 +30,20 @@ public class TicketAssignmentServiceImpl implements TicketAssignmentService {
     private final AppUserRepository appUserRepository;
     private final TicketRepository ticketRepository;
 
+    /**
+     * Constructs a {@code TicketAssignmentServiceImpl} with the required repositories.
+     *
+     * @param appUserRepository the repository for managing AppUser entities
+     * @param ticketRepository  the repository for managing Ticket entities
+     */
     public TicketAssignmentServiceImpl(AppUserRepository appUserRepository, TicketRepository ticketRepository) {
         this.appUserRepository = appUserRepository;
         this.ticketRepository = ticketRepository;
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public AppUser assignTicket(Ticket ticket) {
         List<AppUser> supportAgents = appUserRepository.findByRole(Role.IT_SUPPORT);

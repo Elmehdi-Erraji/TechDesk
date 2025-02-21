@@ -26,6 +26,15 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
+
+
+/**
+ * Implementation of the {@link CommentService} interface.
+ * <p>
+ * This class provides functionality for adding comments to tickets and retrieving comments from a ticket.
+ * It ensures that only authorized IT support users can add comments and logs audit events for comment additions.
+ * </p>
+ */
 @Service
 public class CommentServiceImpl implements CommentService {
 
@@ -33,13 +42,25 @@ public class CommentServiceImpl implements CommentService {
 
     private final TicketService ticketService;
     private final UserService userService;
-
     private final CommentRepository commentRepository;
     private final CommentMapper commentMapper;
     private final AuditLogService auditLogService;
 
+    /**
+     * Constructs a {@code CommentServiceImpl} with the required dependencies.
+     *
+     * @param ticketRepository the repository for managing tickets (not directly used here)
+     * @param appUserRepository the repository for managing AppUser entities (not directly used here)
+     * @param ticketService the service for handling ticket operations
+     * @param userService the service for handling user operations
+     * @param commentRepository the repository for managing comments
+     * @param commentMapper the mapper for converting between Comment entities and DTOs
+     * @param auditLogService the service for logging audit events
+     */
     public CommentServiceImpl(TicketRepository ticketRepository,
-                              AppUserRepository appUserRepository, TicketService ticketService, UserService userService,
+                              AppUserRepository appUserRepository,
+                              TicketService ticketService,
+                              UserService userService,
                               CommentRepository commentRepository,
                               CommentMapper commentMapper,
                               AuditLogService auditLogService) {
@@ -50,6 +71,9 @@ public class CommentServiceImpl implements CommentService {
         this.auditLogService = auditLogService;
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     @Transactional
     public CommentResponseDTO addCommentToTicket(UUID ticketId, CommentRequestDTO commentRequestDTO, UUID supportUserId) {
@@ -72,6 +96,9 @@ public class CommentServiceImpl implements CommentService {
         return commentMapper.commentToCommentResponseDTO(savedComment);
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public Page<CommentResponseDTO> getCommentsForTicket(UUID ticketId, Pageable pageable) {
         Ticket ticket = ticketService.findById(ticketId)
