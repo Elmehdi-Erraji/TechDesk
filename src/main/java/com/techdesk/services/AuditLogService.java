@@ -50,4 +50,16 @@ public interface AuditLogService {
      * @return a page of all {@link TicketAuditLog} objects
      */
     Page<TicketAuditLog> getAllLogs(Pageable pageable);
+
+
+    /**
+     * Deletes all audit logs associated with the specified ticket.
+     * <p>
+     * This method is used to remove audit log entries when a ticket is being deleted,
+     * ensuring that no foreign key constraints are violated.
+     * </p>
+     *
+     * @param ticket the ticket whose audit logs should be deleted
+     */
+    void deleteLogsForTicket(Ticket ticket);
 }

@@ -1,17 +1,15 @@
 package com.techdesk.services.Impl;
 
-import com.techdesk.dto.CreateTicketDTO;
-import com.techdesk.dto.TicketResponseDTO;
-import com.techdesk.dto.UpdateTicketStatusDTO;
+import com.techdesk.dto.*;
 import com.techdesk.dto.mappers.TicketMapper;
 import com.techdesk.entities.AppUser;
+import com.techdesk.entities.Comment;
 import com.techdesk.entities.Ticket;
+import com.techdesk.entities.enums.TicketCategory;
+import com.techdesk.entities.enums.TicketPriority;
 import com.techdesk.entities.enums.TicketStatus;
 import com.techdesk.repositories.TicketRepository;
-import com.techdesk.services.AuditLogService;
-import com.techdesk.services.TicketAssignmentService;
-import com.techdesk.services.TicketService;
-import com.techdesk.services.UserService;
+import com.techdesk.services.*;
 import com.techdesk.utils.TicketSearchUtil;
 import com.techdesk.web.errors.SupportUserNotFoundException;
 import com.techdesk.web.errors.TicketNotFoundException;
@@ -19,7 +17,7 @@ import com.techdesk.web.errors.UnauthorizedAccessException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
@@ -47,6 +45,7 @@ public class TicketServiceImpl implements TicketService {
     private final TicketAssignmentService ticketAssignmentService;
     private final AuditLogService auditLogService;
     private final UserService userService;
+    private final CommentService commentService;
     private static final Logger logger = LoggerFactory.getLogger(TicketServiceImpl.class);
 
     /**
@@ -60,12 +59,13 @@ public class TicketServiceImpl implements TicketService {
      */
     public TicketServiceImpl(TicketRepository ticketRepository, TicketMapper ticketMapper,
                              TicketAssignmentService ticketAssignmentService, AuditLogService auditLogService,
-                             UserService userService) {
+                             UserService userService, CommentService commentService) {
         this.ticketRepository = ticketRepository;
         this.ticketMapper = ticketMapper;
         this.ticketAssignmentService = ticketAssignmentService;
         this.auditLogService = auditLogService;
         this.userService = userService;
+        this.commentService = commentService;
     }
 
     /**
@@ -111,10 +111,15 @@ public class TicketServiceImpl implements TicketService {
     /**
      * {@inheritDoc}
      */
-    @Override
     public Page<TicketResponseDTO> getTicketsForEmployee(UUID employeeId, Pageable pageable) {
         Page<Ticket> tickets = ticketRepository.findByCreatedById(employeeId, pageable);
-        return tickets.map(ticketMapper::ticketToTicketResponseDTO);
+        return tickets.map(ticket -> {
+            TicketResponseDTO dto = ticketMapper.ticketToTicketResponseDTO(ticket);
+            Page<CommentResponseDTO> commentPage = commentService.getCommentsForTicket(
+                    ticket.getId(), PageRequest.of(0, Integer.MAX_VALUE));
+            dto.setComments(commentPage.getContent());
+            return dto;
+        });
     }
 
     /**
@@ -135,11 +140,21 @@ public class TicketServiceImpl implements TicketService {
      * {@inheritDoc}
      */
     @Override
-    public List<TicketResponseDTO> getAllTickets() {
-        List<Ticket> tickets = ticketRepository.findAll();
-        return tickets.stream()
-                .map(ticketMapper::ticketToTicketResponseDTO)
-                .collect(Collectors.toList());
+    public Page<TicketResponseDTO> getAllTickets(Pageable pageable) {
+        // Fetch tickets with pagination
+        Page<Ticket> tickets = ticketRepository.findAll(pageable);
+
+        // Map tickets to TicketResponseDTO and include comments
+        return tickets.map(ticket -> {
+            TicketResponseDTO dto = ticketMapper.ticketToTicketResponseDTO(ticket);
+
+            // Fetch comments for the ticket
+            Page<CommentResponseDTO> commentPage = commentService.getCommentsForTicket(
+                    ticket.getId(), PageRequest.of(0, Integer.MAX_VALUE)); // Fetch all comments
+            dto.setComments(commentPage.getContent());
+
+            return dto;
+        });
     }
 
     /**
@@ -165,6 +180,61 @@ public class TicketServiceImpl implements TicketService {
 
         return ticketMapper.ticketToTicketResponseDTO(updatedTicket);
     }
+
+
+    /**
+     * {@inheritDoc}
+     */
+    public TicketResponseDTO updateTicketByEmployee(UUID ticketId, UUID employeeId, UpdateTicketEmployeeDTO updateDTO) {
+        Ticket ticket = getTicketEntityById(ticketId);
+        if (!ticket.getCreatedBy().getId().equals(employeeId)) {
+            throw new UnauthorizedAccessException("Employee is not the creator of this ticket");
+        }
+        if (!ticket.getStatus().equals(TicketStatus.NEW)) {
+            throw new IllegalArgumentException("Ticket can only be updated if its status is NEW");
+        }
+        ticket.setTitle(updateDTO.getTitle());
+        ticket.setDescription(updateDTO.getDescription());
+        ticket.setPriority(TicketPriority.valueOf(updateDTO.getPriority()));
+        ticket.setCategory(TicketCategory.valueOf(updateDTO.getCategory()));
+        ticket.setUpdatedAt(LocalDateTime.now());
+        Ticket updatedTicket = ticketRepository.save(ticket);
+        logger.info("Ticket {} updated by employee {}",
+                ticket.getId(), ticket.getCreatedBy().getUsername());
+        return ticketMapper.ticketToTicketResponseDTO(updatedTicket);
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    @Transactional
+    public void deleteTicket(UUID ticketId, UUID userId) {
+        Ticket ticket = getTicketEntityById(ticketId);
+        AppUser user = userService.findById(userId)
+                .orElseThrow(() -> new IllegalArgumentException("User not found with id " + userId));
+
+        if (!user.getRole().name().equals("IT_SUPPORT")) {
+            if (!ticket.getCreatedBy().getId().equals(userId)) {
+                throw new UnauthorizedAccessException("Employee is not the creator of this ticket");
+            }
+            if (ticket.getStatus().equals(TicketStatus.IN_PROGRESS)) {
+                throw new IllegalArgumentException("Cannot delete a ticket that is in progress");
+            }
+        }
+
+        if (ticket.getComments() != null && !ticket.getComments().isEmpty()) {
+            for (Comment comment : ticket.getComments()) {
+                commentService.deleteComment(comment.getId());
+            }
+        }
+
+        auditLogService.deleteLogsForTicket(ticket);
+
+        ticketRepository.delete(ticket);
+        logger.info("Ticket {} deleted by user {}", ticket.getId(), user.getUsername());
+    }
+
 
     /**
      * {@inheritDoc}

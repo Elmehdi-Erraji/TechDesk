@@ -2,6 +2,7 @@ package com.techdesk.services;
 
 import com.techdesk.dto.CreateTicketDTO;
 import com.techdesk.dto.TicketResponseDTO;
+import com.techdesk.dto.UpdateTicketEmployeeDTO;
 import com.techdesk.dto.UpdateTicketStatusDTO;
 import com.techdesk.entities.Ticket;
 import org.springframework.data.domain.Page;
@@ -58,7 +59,7 @@ public interface TicketService {
      *
      * @return a list of {@link TicketResponseDTO} objects representing all tickets in the system
      */
-    List<TicketResponseDTO> getAllTickets();
+    Page<TicketResponseDTO> getAllTickets(Pageable pageable);
 
     /**
      * Updates the status of an existing ticket.
@@ -96,4 +97,44 @@ public interface TicketService {
      * @throws com.techdesk.web.errors.TicketNotFoundException if the ticket is not found
      */
     Optional<Ticket> findById(UUID ticketId);
+
+
+    /**
+     * Updates a ticket by its creator (employee).
+     * <p>
+     * This method allows an employee to update their own ticket. The update is permitted only if:
+     * <ul>
+     *   <li>The employee is the original creator of the ticket.</li>
+     *   <li>The current status of the ticket is "NEW" (i.e. not yet processed).</li>
+     * </ul>
+     * The update is performed using the details provided in the {@code UpdateTicketEmployeeDTO},
+     * which includes the new title, description, priority, and category.
+     * </p>
+     *
+     * @param ticketId  the unique identifier of the ticket to update
+     * @param employeeId the unique identifier of the employee attempting the update
+     * @param updateDTO the data transfer object containing the updated ticket details
+     * @return a {@link TicketResponseDTO} representing the updated ticket
+     * @throws com.techdesk.web.errors.TicketNotFoundException if the ticket is not found
+     * @throws com.techdesk.web.errors.UnauthorizedAccessException if the employee is not the creator of the ticket
+     * @throws IllegalArgumentException if the ticket status is not "NEW"
+     */
+    TicketResponseDTO updateTicketByEmployee(UUID ticketId, UUID employeeId, UpdateTicketEmployeeDTO updateDTO);
+
+    /**
+     * Deletes a ticket by its creator (employee) or by an IT support user.
+     * <p>
+     * For an employee, deletion is permitted only if the employee is the creator of the ticket
+     * and the ticket status is "NEW" (i.e. it has not yet been processed or is in progress).
+     * IT support users may also be allowed to delete tickets based on business rules.
+     * </p>
+     *
+     * @param ticketId the unique identifier of the ticket to delete
+     * @param userId   the unique identifier of the user (employee or IT support) requesting deletion
+     * @throws com.techdesk.web.errors.TicketNotFoundException if the ticket is not found
+     * @throws com.techdesk.web.errors.UnauthorizedAccessException if the user is not allowed to delete the ticket
+     * @throws IllegalArgumentException if the ticket status is not "NEW" (in the case of employee deletion)
+     */
+    void deleteTicket(UUID ticketId, UUID userId);
+
 }

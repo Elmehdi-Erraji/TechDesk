@@ -11,6 +11,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 
@@ -85,5 +86,14 @@ public class AuditLogServiceImpl implements AuditLogService {
     @Override
     public Page<TicketAuditLog> getAllLogs(Pageable pageable) {
         return auditLogRepository.findAll(pageable);
+    }
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    @Transactional
+    public void deleteLogsForTicket(Ticket ticket) {
+        auditLogRepository.deleteByTicket(ticket);
+        logger.info("Deleted audit logs for Ticket {}", ticket.getId());
     }
 }

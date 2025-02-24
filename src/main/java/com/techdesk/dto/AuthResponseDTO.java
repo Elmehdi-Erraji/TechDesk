@@ -9,5 +9,5 @@ import java.util.UUID;
 public class AuthResponseDTO {
     private UUID id;
     private String username;
-    private Role role;
+    private String role;
 }

@@ -16,6 +16,7 @@ import com.techdesk.services.UserService;
 import com.techdesk.web.errors.SupportUserNotFoundException;
 import com.techdesk.web.errors.TicketNotFoundException;
 import com.techdesk.web.errors.UnauthorizedAccessException;
+import org.springframework.context.annotation.Lazy;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.data.domain.Page;
@@ -59,7 +60,7 @@ public class CommentServiceImpl implements CommentService {
      */
     public CommentServiceImpl(TicketRepository ticketRepository,
                               AppUserRepository appUserRepository,
-                              TicketService ticketService,
+                              @Lazy TicketService ticketService,
                               UserService userService,
                               CommentRepository commentRepository,
                               CommentMapper commentMapper,
@@ -105,5 +106,14 @@ public class CommentServiceImpl implements CommentService {
                 .orElseThrow(() -> new TicketNotFoundException("Ticket not found"));
         return commentRepository.findByTicket(ticket, pageable)
                 .map(commentMapper::commentToCommentResponseDTO);
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    @Transactional
+    public void deleteComment(UUID commentId) {
+        commentRepository.deleteById(commentId);
     }
 }

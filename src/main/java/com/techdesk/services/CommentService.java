@@ -39,4 +39,15 @@ public interface CommentService {
      * @throws com.techdesk.web.errors.TicketNotFoundException if the ticket is not found
      */
     Page<CommentResponseDTO> getCommentsForTicket(UUID ticketId, Pageable pageable);
+
+    /**
+     * Deletes the comment with the specified identifier.
+     * <p>
+     * This method is used to remove a comment from a ticket. The deletion must occur before the ticket is deleted
+     * to satisfy foreign key constraints.
+     * </p>
+     *
+     * @param commentId the unique identifier of the comment to delete
+     */
+    void deleteComment(UUID commentId);
 }
