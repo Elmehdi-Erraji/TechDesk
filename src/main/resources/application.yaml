@@ -12,5 +12,6 @@ spring:
         dialect: org.hibernate.dialect.OracleDialect
     show-sql: true
 
+
 server:
   port: 8080
