@@ -2,6 +2,7 @@ package com.techdesk.web.rest;
 
 import com.techdesk.dto.CreateTicketDTO;
 import com.techdesk.dto.TicketResponseDTO;
+import com.techdesk.dto.UpdateTicketEmployeeDTO;
 import com.techdesk.dto.UpdateTicketStatusDTO;
 import com.techdesk.services.TicketService;
 import jakarta.validation.Valid;
@@ -54,11 +55,30 @@ public class TicketController {
         return ResponseEntity.ok(response);
     }
 
+    // New endpoint for employee update
+    @PutMapping("/employee/{ticketId}/update")
+    public ResponseEntity<TicketResponseDTO> updateTicketByEmployee(
+            @PathVariable UUID ticketId,
+            @Valid @RequestBody UpdateTicketEmployeeDTO updateDTO,
+            @RequestParam UUID employeeId) {
+        TicketResponseDTO response = ticketService.updateTicketByEmployee(ticketId, employeeId, updateDTO);
+        return ResponseEntity.ok(response);
+    }
+
+    // New endpoint for employee deletion
+    @DeleteMapping("/{ticketId}")
+    public ResponseEntity<Void> deleteTicket(
+            @PathVariable UUID ticketId,
+            @RequestParam UUID userId) {
+        ticketService.deleteTicket(ticketId, userId);
+        return ResponseEntity.ok().build();
+    }
     // IT Support endpoints
 
     @GetMapping("/all")
-    public ResponseEntity<List<TicketResponseDTO>> getAllTickets(@RequestParam UUID supportUserId) {
-        List<TicketResponseDTO> tickets = ticketService.getAllTickets();
+    public ResponseEntity<Page<TicketResponseDTO>> getAllTickets(
+            @RequestParam UUID supportUserId, Pageable pageable) {
+        Page<TicketResponseDTO> tickets = ticketService.getAllTickets(pageable);
         return ResponseEntity.ok(tickets);
     }
 
@@ -66,7 +86,7 @@ public class TicketController {
     public ResponseEntity<TicketResponseDTO> updateTicketStatus(@PathVariable UUID ticketId,
                                                                 @Valid @RequestBody UpdateTicketStatusDTO updateDTO,
                                                                 @RequestParam UUID supportUserId) {
-        TicketResponseDTO response = ticketService.updateTicketStatus(ticketId, updateDTO, supportUserId);
+        TicketResponseDTO response = ticketService.updateTicketStatus(ticketId, supportUserId, updateDTO);
         return ResponseEntity.ok(response);
     }
 

@@ -11,9 +11,17 @@ import org.slf4j.LoggerFactory;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 
+/**
+ * Implementation of the {@link AuditLogService} interface.
+ * <p>
+ * This class provides methods to log audit events such as status changes and comment additions on tickets,
+ * and to retrieve audit logs from the underlying data repository.
+ * </p>
+ */
 @Service
 public class AuditLogServiceImpl implements AuditLogService {
 
@@ -21,10 +29,18 @@ public class AuditLogServiceImpl implements AuditLogService {
 
     private final AuditLogRepository auditLogRepository;
 
+    /**
+     * Constructs an {@code AuditLogServiceImpl} with the required {@link AuditLogRepository}.
+     *
+     * @param auditLogRepository the repository used to manage ticket audit logs
+     */
     public AuditLogServiceImpl(AuditLogRepository auditLogRepository) {
         this.auditLogRepository = auditLogRepository;
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public void logStatusChange(Ticket ticket, AppUser changedBy, String oldStatus, String newStatus) {
         TicketAuditLog log = TicketAuditLog.builder()
@@ -39,6 +55,9 @@ public class AuditLogServiceImpl implements AuditLogService {
                 ticket.getId(), oldStatus, newStatus, changedBy.getUsername());
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public void logCommentAdded(Ticket ticket, AppUser changedBy, String commentText) {
         TicketAuditLog log = TicketAuditLog.builder()
@@ -53,13 +72,28 @@ public class AuditLogServiceImpl implements AuditLogService {
                 ticket.getId(), changedBy.getUsername());
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public Page<TicketAuditLog> getLogsForTicket(Ticket ticket, Pageable pageable) {
         return auditLogRepository.findByTicket(ticket, pageable);
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public Page<TicketAuditLog> getAllLogs(Pageable pageable) {
         return auditLogRepository.findAll(pageable);
+    }
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    @Transactional
+    public void deleteLogsForTicket(Ticket ticket) {
+        auditLogRepository.deleteByTicket(ticket);
+        logger.info("Deleted audit logs for Ticket {}", ticket.getId());
     }
 }

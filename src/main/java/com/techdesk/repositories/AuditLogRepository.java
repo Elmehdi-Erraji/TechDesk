@@ -11,4 +11,7 @@ import java.util.UUID;
 
 public interface AuditLogRepository extends JpaRepository<TicketAuditLog, UUID> {
     Page<TicketAuditLog> findByTicket(Ticket ticket, Pageable pageable);
+
+    void deleteByTicket(Ticket ticket);
+
 }

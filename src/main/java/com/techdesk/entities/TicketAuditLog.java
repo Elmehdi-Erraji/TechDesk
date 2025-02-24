@@ -5,6 +5,8 @@ import com.techdesk.entities.enums.AuditLogType;
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.GenericGenerator;
+import org.hibernate.annotations.OnDelete;
+import org.hibernate.annotations.OnDeleteAction;
 import org.hibernate.annotations.Type;
 
 import java.time.LocalDateTime;
@@ -20,13 +22,13 @@ import java.util.UUID;
 public class TicketAuditLog {
 
     @Id
-    @GeneratedValue(generator = "UUID")
-    @GenericGenerator(name = "UUID", strategy = "org.hibernate.id.UUIDGenerator")
+    @GeneratedValue(strategy = GenerationType.UUID)
     @Column(name = "id", updatable = false, nullable = false)
     private UUID id;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "ticket_id", nullable = false)
+    @OnDelete(action = OnDeleteAction.CASCADE)
     private Ticket ticket;
 
     @ManyToOne(fetch = FetchType.LAZY)
