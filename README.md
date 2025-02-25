@@ -259,8 +259,8 @@ Below are the default user accounts created by `script.sql` (if included in the 
 | Support  | `support`  | `Password123` |
 | Employee | `employee` | `Password123` |
 
-- **Admin** can view and manage all tickets, track changes in the audit log, and has full access.
-- **Support** can view and update tickets (comment, change status) but does not have admin privileges.
+- **Admin** can view and  track changes in the audit log.
+- **Support** can view and update tickets (comment, change status).
 - **Employee** can create and edit their own tickets (subject to status restrictions) but cannot view system-wide data.
 
 Feel free to modify these credentials in the `script.sql` to suit your security requirements.
