@@ -49,3 +49,194 @@ CREATE TABLE TICKET_AUDIT_LOGS (
 );
 /
 
+
+
+-- Migrations
+INSERT INTO APP_USERS (ID, PASSWORD, ROLE, USERNAME)
+VALUES (
+           HEXTORAW('F9A3E9C8E19A461EA5471350E44F6DD9'),
+           '$2a$10$HOAj6pqCL/1ZpXdRR2bwgOd.p3jfAvnsCz6D0nqbaiC92LMYYd0Gy',
+           'ADMIN',
+           'admin'
+       );
+
+INSERT INTO APP_USERS (ID, PASSWORD, ROLE, USERNAME)
+VALUES (
+           HEXTORAW('F9A3E9C8E19A461EA5471350E44F6DDA'),
+           '$2a$10$HOAj6pqCL/1ZpXdRR2bwgOd.p3jfAvnsCz6D0nqbaiC92LMYYd0Gy',
+           'IT_SUPPORT',
+           'support'
+       );
+
+INSERT INTO APP_USERS (ID, PASSWORD, ROLE, USERNAME)
+VALUES (
+           HEXTORAW('F9A3E9C8E19A461EA5471350E44F6DDB'),
+           '$2a$10$HOAj6pqCL/1ZpXdRR2bwgOd.p3jfAvnsCz6D0nqbaiC92LMYYd0Gy',
+           'EMPLOYEE',
+           'employee'
+       );
+
+
+-- Tickets migration
+
+-- Migration: Insert 10 tickets into the TICKETS table
+
+-- Ticket 1
+INSERT INTO TICKETS (
+    ID, CATEGORY, CREATED_AT, DESCRIPTION, PRIORITY, STATUS, TITLE, UPDATED_AT, ASSIGNED_TO, CREATED_BY
+) VALUES (
+             HEXTORAW('F9A3E9C8E19A461EA5471350E44F6DDE'),
+             'NETWORK',
+             TIMESTAMP '2025-02-25 08:15:00',
+             'Network outage reported in the main office.',
+             'HIGH',
+             'NEW',
+             'Network Outage',
+             NULL,
+             NULL,
+             HEXTORAW('F9A3E9C8E19A461EA5471350E44F6DD9')
+         );
+
+-- Ticket 2
+INSERT INTO TICKETS (
+    ID, CATEGORY, CREATED_AT, DESCRIPTION, PRIORITY, STATUS, TITLE, UPDATED_AT, ASSIGNED_TO, CREATED_BY
+) VALUES (
+             HEXTORAW('F9A3E9C8E19A461EA5471350E44F6DDF'),
+             'HARDWARE',
+             TIMESTAMP '2025-02-25 09:00:00',
+             'Printer malfunction in the reception area.',
+             'MEDIUM',
+             'IN_PROGRESS',
+             'Printer Issue',
+             NULL,
+             NULL,
+             HEXTORAW('F9A3E9C8E19A461EA5471350E44F6DD9')
+         );
+
+-- Ticket 3
+INSERT INTO TICKETS (
+    ID, CATEGORY, CREATED_AT, DESCRIPTION, PRIORITY, STATUS, TITLE, UPDATED_AT, ASSIGNED_TO, CREATED_BY
+) VALUES (
+             HEXTORAW('F9A3E9C8E19A461EA5471350E44F6DE0'),
+             'SOFTWARE',
+             TIMESTAMP '2025-02-25 09:30:00',
+             'Software update required for the accounting system.',
+             'CRITICAL',
+             'NEW',
+             'Software Update',
+             NULL,
+             NULL,
+             HEXTORAW('F9A3E9C8E19A461EA5471350E44F6DD9')
+         );
+
+-- Ticket 4
+INSERT INTO TICKETS (
+    ID, CATEGORY, CREATED_AT, DESCRIPTION, PRIORITY, STATUS, TITLE, UPDATED_AT, ASSIGNED_TO, CREATED_BY
+) VALUES (
+             HEXTORAW('F9A3E9C8E19A461EA5471350E44F6DE1'),
+             'OTHER',
+             TIMESTAMP '2025-02-25 10:00:00',
+             'General inquiry about IT policies.',
+             'LOW',
+             'RESOLVED',
+             'IT Policy Inquiry',
+             NULL,
+             NULL,
+             HEXTORAW('F9A3E9C8E19A461EA5471350E44F6DD9')
+         );
+
+-- Ticket 5
+INSERT INTO TICKETS (
+    ID, CATEGORY, CREATED_AT, DESCRIPTION, PRIORITY, STATUS, TITLE, UPDATED_AT, ASSIGNED_TO, CREATED_BY
+) VALUES (
+             HEXTORAW('F9A3E9C8E19A461EA5471350E44F6DE2'),
+             'NETWORK',
+             TIMESTAMP '2025-02-25 10:15:00',
+             'Slow internet speed in the west wing.',
+             'HIGH',
+             'NEW',
+             'Internet Speed Issue',
+             NULL,
+             NULL,
+             HEXTORAW('F9A3E9C8E19A461EA5471350E44F6DD9')
+         );
+
+-- Ticket 6
+INSERT INTO TICKETS (
+    ID, CATEGORY, CREATED_AT, DESCRIPTION, PRIORITY, STATUS, TITLE, UPDATED_AT, ASSIGNED_TO, CREATED_BY
+) VALUES (
+             HEXTORAW('F9A3E9C8E19A461EA5471350E44F6DE3'),
+             'HARDWARE',
+             TIMESTAMP '2025-02-25 10:30:00',
+             'Laptop battery issue reported by an employee.',
+             'MEDIUM',
+             'IN_PROGRESS',
+             'Laptop Battery Issue',
+             NULL,
+             NULL,
+             HEXTORAW('F9A3E9C8E19A461EA5471350E44F6DD9')
+         );
+
+-- Ticket 7
+INSERT INTO TICKETS (
+    ID, CATEGORY, CREATED_AT, DESCRIPTION, PRIORITY, STATUS, TITLE, UPDATED_AT, ASSIGNED_TO, CREATED_BY
+) VALUES (
+             HEXTORAW('F9A3E9C8E19A461EA5471350E44F6DE4'),
+             'SOFTWARE',
+             TIMESTAMP '2025-02-25 11:00:00',
+             'Email client crashes intermittently.',
+             'CRITICAL',
+             'NEW',
+             'Email Client Crash',
+             NULL,
+             NULL,
+             HEXTORAW('F9A3E9C8E19A461EA5471350E44F6DD9')
+         );
+
+-- Ticket 8
+INSERT INTO TICKETS (
+    ID, CATEGORY, CREATED_AT, DESCRIPTION, PRIORITY, STATUS, TITLE, UPDATED_AT, ASSIGNED_TO, CREATED_BY
+) VALUES (
+             HEXTORAW('F9A3E9C8E19A461EA5471350E44F6DE5'),
+             'OTHER',
+             TIMESTAMP '2025-02-25 11:15:00',
+             'Request for new workstation setup.',
+             'LOW',
+             'IN_PROGRESS',
+             'Workstation Setup Request',
+             NULL,
+             NULL,
+             HEXTORAW('F9A3E9C8E19A461EA5471350E44F6DD9')
+         );
+
+-- Ticket 9
+INSERT INTO TICKETS (
+    ID, CATEGORY, CREATED_AT, DESCRIPTION, PRIORITY, STATUS, TITLE, UPDATED_AT, ASSIGNED_TO, CREATED_BY
+) VALUES (
+             HEXTORAW('F9A3E9C8E19A461EA5471350E44F6DE6'),
+             'NETWORK',
+             TIMESTAMP '2025-02-25 11:30:00',
+             'VPN connectivity issues reported by a remote employee.',
+             'HIGH',
+             'NEW',
+             'VPN Connectivity Issue',
+             NULL,
+             NULL,
+             HEXTORAW('F9A3E9C8E19A461EA5471350E44F6DD9')
+         );
+
+-- Ticket 10
+INSERT INTO TICKETS (
+    ID, CATEGORY, CREATED_AT, DESCRIPTION, PRIORITY, STATUS, TITLE, UPDATED_AT, ASSIGNED_TO, CREATED_BY
+) VALUES (
+             HEXTORAW('F9A3E9C8E19A461EA5471350E44F6DE7'),
+             'HARDWARE',
+             TIMESTAMP '2025-02-25 12:00:00',
+             'Desktop computer overheating problem in the finance department.',
+             'MEDIUM',
+             'NEW',
+             'Overheating Desktop',
+             NULL,
+             NULL,
+             HEXTORAW('F9A3E9C8E19A461EA5471350E44F6DD9')
+         );
