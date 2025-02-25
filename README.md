@@ -16,9 +16,12 @@ Welcome to the TechDesk project! This repository contains a fully functional tic
   - [Deploying with Docker Compose](#deploying-with-docker-compose)
     - [Dockerfile (Backend)](#dockerfile-backend)
     - [docker-compose.yml](#docker-composeyml)
+    - [How to Start the Services](#how-to-start-the-services)
   - [Running the Java Swing Client](#running-the-java-swing-client)
   - [Viewing the Code Documentation](#viewing-the-code-documentation)
 - [Additional Information](#additional-information)
+  - [Using the SQL Script](#using-the-sql-script)
+  - [Default Users and Credentials](#default-users-and-credentials)
 - [Credits](#credits)
 
 ---
@@ -127,7 +130,7 @@ services:
       timeout: 10s
       retries: 10
     volumes:
-      # Optional: Mount the SQL script for database initialization
+      # Mount the SQL script for database initialization from src/main/resources/db/script.sql
       - ./src/main/resources/db/script.sql:/app/script.sql
 
   techdesk-backend:
@@ -145,7 +148,7 @@ services:
       - SPRING_DATASOURCE_PASSWORD=techdesk_password
 ```
 
-##### How to Start the Services
+#### How to Start the Services
 
 1. **Clone the Repository:**
 
@@ -164,7 +167,7 @@ services:
 
 3. **Verify the Containers are Running:**
 
-   Use the command below to check that both containers are up:
+   Use the command below to check that both containers are up and running:
 
    ```bash
    docker ps
@@ -234,18 +237,33 @@ If you need to review the generated code documentation:
 
 ## Additional Information
 
-- **Logging and Auditing:**  
-  The backend logs all key operations, ensuring that ticket updates and comments are efficiently tracked.
+### Using the SQL Script
 
-- **User Management:**  
-  Role-based access control is implemented, ensuring secure and distinct access levels for administrators, support staff, and employees.
+The file `script.sql` contains the necessary statements to:
 
-- **Testing:**  
-  Comprehensive tests have been performed to validate the functionality and reliability of the application.
+- Create the required tables (`APP_USERS`, `TICKETS`, `COMMENTS`, `TICKET_AUDIT_LOGS`, etc.).
+- Insert sample data for testing, including default user accounts.
 
-- **API Documentation:**  
-  For a detailed overview of the API endpoints and usage, please refer to the Swagger documentation at:  
-  [Swagger API Documentation](http://localhost:8080/swagger-ui/index.html#/)
+To execute this script manually:
+
+1. Make sure you have mounted the script in the `docker-compose.yml` (if desired) or have it accessible in your container.
+2. Connect to the Oracle XE container and run the script as shown in the [How to Start the Services](#how-to-start-the-services) section.
+
+### Default Users and Credentials
+
+Below are the default user accounts created by `script.sql` (if included in the script):
+
+| Role     | Username   | Password      |
+|----------|----------- |---------------|
+| Admin    | `admin`    | `Password123` |
+| Support  | `support`  | `Password123` |
+| Employee | `employee` | `Password123` |
+
+- **Admin** can view and manage all tickets, track changes in the audit log, and has full access.
+- **Support** can view and update tickets (comment, change status) but does not have admin privileges.
+- **Employee** can create and edit their own tickets (subject to status restrictions) but cannot view system-wide data.
+
+Feel free to modify these credentials in the `script.sql` to suit your security requirements.
 
 ---
 
@@ -254,3 +272,5 @@ If you need to review the generated code documentation:
 Thank you for taking the time to review and use the TechDesk project. Your feedback is highly appreciated. If you encounter any issues or have suggestions for improvements, please feel free to open an issue or contact me directly.
 
 Enjoy working with TechDesk!
+
+---
